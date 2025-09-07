@@ -36,7 +36,9 @@ function App() {
   const findAbandonedProjects = async () => {
     setLoading(true);
     setError(''); // Clear previous errors
-    setSelectedCollection(null); // Clear collection when searching manually
+    setSelectedCollection(null);
+    setCollectionRepos([]);  // Clear collection when searching manually
+
     try {
       console.log('Fetching repos for:', username);
       console.log('Filter period:', timeFilter, 'months');
@@ -71,12 +73,15 @@ function App() {
 
   const loadCollection = async (collection) => {
     setLoading(true);
+    setError('');
     setSelectedCollection(collection);
     setUsername(''); // Clear username input
     let allRepos = [];
     
     for (const user of CURATED_COLLECTIONS[collection].users) {
       try {
+        await new Promise(resolve=> setTimeout(resolve, 200));
+
         const response = await fetch(`https://api.github.com/users/${user}/repos?per_page=100`);
         const repos = await response.json();
         
@@ -139,7 +144,10 @@ function App() {
             type="text"
             placeholder="Enter GitHub username..."
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              if (error) setError('');
+            }}
             onKeyDown={(e) => e.key === 'Enter' && findAbandonedProjects()}
           />
           <button onClick={findAbandonedProjects}>
@@ -178,7 +186,7 @@ function App() {
       </header>
 
       {loading && <div className="loading">Curating exhibition...</div>}
-      {error && <div className="error-message">{error}</div>}
+      {error && !selectedCollection && <div className="error-message">{error}</div>}
 
       {/* Curated Collections */}
       {!username && !selectedCollection && (
@@ -202,14 +210,26 @@ function App() {
       )}
 
       {selectedCollection && (
-        <div style={{ textAlign: 'center', margin: '2rem 0' }}>
+        <div style={{
+          textAlign: 'center',
+          margin: '2rem 0',
+          padding: '1rem',
+          background: 'rgba(212, 175, 55, 0.05)',
+          borderRadius: '8px'
+        }}>
           <h2 style={{ color: '#d4af37' }}>
             {CURATED_COLLECTIONS[selectedCollection].title}
           </h2>
+          <p style={{ color: '#999', marginBottom: '1rem' }}>
+            Viewing curated collection
+          </p>
           <button 
             onClick={() => {
               setSelectedCollection(null);
               setCollectionRepos([]);
+              setExhibits([]); 
+              setUsername('');
+              setError('');
             }}
             style={{
               background: 'transparent',
@@ -217,7 +237,7 @@ function App() {
               color: '#d4af37',
               padding: '8px 16px',
               cursor: 'pointer',
-              marginTop: '1rem'
+              BorderRadius: '4px'
             }}
           >
             ← Back to Collections
