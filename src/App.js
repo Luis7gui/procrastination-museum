@@ -276,25 +276,34 @@ function App() {
         {reposToDisplay.map(repo => (
           <div key={repo.id} className="exhibit">
             <div className="frame">
-              <h3>{repo.name}</h3>
-              {repo.owner_name && <p className="owner">by {repo.owner_name}</p>}
-              <p className="description">{repo.description || "No artist's statement provided"}</p>
-              <p className="poetry">{getPoetryDescription(repo)}</p>
-              <div className="plaque">
-                <p>Created: {new Date(repo.created_at).getFullYear()}</p>
-                <p>Last Touched: {new Date(repo.updated_at).toLocaleDateString()}</p>
-                <p>{repo.stargazers_count} admirers</p>
-                <p>{repo.open_issues_count} unresolved regrets</p>
+              <div className="frame-content">
+                <p className="description">{repo.description || "No description provided"}</p>
+                <p className="poetry">{getPoetryDescription(repo)}</p>
+
+                <div className="frame-stats">
+                  <span>
+                    <strong>{repo.stargazers_count}</strong>
+                    {repo.stargazers_count === 1 ? 'star' : 'stars'}
+                  </span>
+                  <span>
+                    <strong>{new Date(repo.created_at). getFullYear()}</strong>
+                    born
+                  </span>
+                  <span>
+                    <strong>{Math.floor((new Date() - new Date(repo.updated_at)) / (1000 * 60 * 60 * 24 * 30))}</strong>
+                    months idle
+                  </span>
+                </div>
+
+                <a href={repo.html_url} target="_blank" rel="noopener noreferrer" className="visit-tomb">
+                  Visit the Tomb →
+                </a>
               </div>
-              
-              <a
-                href={repo.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="visit-tomb"
-              >
-                Visit the ruins →
-              </a>
+
+              <div className="plaque">
+                <h3>{repo.name}</h3>
+                {repo.owner_name && <p className="owner">by {repo.owner_name}</p>}
+              </div>
             </div>
           </div>
         ))}
