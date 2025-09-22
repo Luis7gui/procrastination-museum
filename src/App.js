@@ -32,6 +32,16 @@ function App() {
   const [error, setError] = useState('');
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [collectionRepos, setCollectionRepos] = useState([]);
+  const [githubToken, setGithubToken] = useState('');
+
+  // Helper function to make authenticated requests
+  const makeGitHubRequest = async (url) => {
+    const headers = {};
+    if (githubToken) {
+      headers.Authorization = `token ${githubToken}`;
+    }
+    return fetch(url, { headers });
+  };
 
   const findAbandonedProjects = async () => {
     setLoading(true);
@@ -43,7 +53,7 @@ function App() {
       console.log('Fetching repos for:', username);
       console.log('Filter period:', timeFilter, 'months');
       
-      const response = await fetch(`https://api.github.com/users/${username}/repos?per_page=100`);
+      const response = await makeGitHubRequest(`https://api.github.com/users/${username}/repos?per_page=100`);
       const repos = await response.json();
       
       console.log('Total repos found:', repos.length);
@@ -82,7 +92,7 @@ function App() {
       try {
         await new Promise(resolve=> setTimeout(resolve, 200));
 
-        const response = await fetch(`https://api.github.com/users/${user}/repos?per_page=100`);
+        const response = await makeGitHubRequest(`https://api.github.com/users/${user}/repos?per_page=100`);
         const repos = await response.json();
         
         const filterDate = new Date();
@@ -111,9 +121,41 @@ function App() {
       `Abandoned ${years} years ago, this masterpiece awaits resurrection.`,
       `${repo.commit_count || 'Countless'} commits lie dormant in eternal slumber.`,
       `Once loved by ${repo.stargazers_count} souls, now forgotten by time.`,
-      `The developer's ambition exceeded their dedication.`
+      `The developer's ambition exceeded their dedication.`,
+      `A digital artifact from a more optimistic era.`,
+      `Dreams turned to code, code turned to dust.`
     ];
     return phrases[Math.floor(Math.random() * phrases.length)];
+  };
+
+  // Função para formatar números (1234 -> 1.2k)
+  const formatNumber = (num) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'k';
+    }
+    return num.toString();
+  };
+
+  // Função para calcular tempo abandonado de forma inteligente
+  const getAbandonedTime = (lastUpdate) => {
+    const now = new Date();
+    const updated = new Date(lastUpdate);
+    const diffTime = Math.abs(now - updated);
+    
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+    
+    if (diffYears >= 2) {
+      return `${diffYears} years ago`;
+    } else if (diffMonths >= 1) {
+      return `${diffMonths} months ago`;
+    } else {
+      return `${diffDays} days ago`;
+    }
   };
 
   const handleFilterChange = (months) => {
@@ -153,6 +195,41 @@ function App() {
           <button onClick={findAbandonedProjects}>
             Explore Collection
           </button>
+        </div>
+
+        {/* GitHub Token Input */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          margin: '1rem 0',
+          gap: '10px',
+          flexWrap: 'wrap'
+        }}>
+          <label style={{ color: '#d4af37', fontSize: '0.9rem' }}>
+            GitHub Token (optional - increases API limit):
+          </label>
+          <input
+            type="password"
+            placeholder="ghp_xxxxxxxxxxxx..."
+            value={githubToken}
+            onChange={(e) => setGithubToken(e.target.value)}
+            style={{
+              background: '#1a1a1a',
+              color: '#d4af37',
+              border: '1px solid #d4af37',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              fontSize: '0.9rem',
+              width: '250px'
+            }}
+          />
+          <span style={{ 
+            color: githubToken ? '#28a745' : '#6c757d', 
+            fontSize: '0.8rem' 
+          }}>
+            {githubToken ? '5000 req/hour' : '60 req/hour'}
+          </span>
         </div>
 
         <div style={{
@@ -277,21 +354,28 @@ function App() {
           <div key={repo.id} className="exhibit">
             <div className="frame">
               <div className="frame-content">
-                <p className="description">{repo.description || "No description provided"}</p>
-                <p className="poetry">{getPoetryDescription(repo)}</p>
+                {/* PROTAGONISTA 1: Descrição */}
+                <p className="description">
+                  {repo.description || "A mysterious project with no description provided"}
+                </p>
+                
+                {/* PROTAGONISTA 2: Frase poética */}
+                <p className="poetry">
+                  {getPoetryDescription(repo)}
+                </p>
 
+                {/* COADJUVANTE: Dados técnicos refinados */}
                 <div className="frame-stats">
-                  <span>
-                    <strong>{repo.stargazers_count}</strong>
-                    {repo.stargazers_count === 1 ? 'star' : 'stars'}
+                  <span className="stat-item">
+                    <strong>{formatNumber(repo.stargazers_count)}</strong> stars
                   </span>
-                  <span>
-                    <strong>{new Date(repo.created_at). getFullYear()}</strong>
-                    born
+                  <span className="stat-separator">•</span>
+                  <span className="stat-item">
+                    Created in <strong>{new Date(repo.created_at).getFullYear()}</strong>
                   </span>
-                  <span>
-                    <strong>{Math.floor((new Date() - new Date(repo.updated_at)) / (1000 * 60 * 60 * 24 * 30))}</strong>
-                    months idle
+                  <span className="stat-separator">•</span>
+                  <span className="stat-item">
+                    Abandoned <strong>{getAbandonedTime(repo.updated_at)}</strong>
                   </span>
                 </div>
 
@@ -300,6 +384,7 @@ function App() {
                 </a>
               </div>
 
+              {/* INFORMAÇÃO DE APOIO: Plaquinha discreta */}
               <div className="plaque">
                 <h3>{repo.name}</h3>
                 {repo.owner_name && <p className="owner">by {repo.owner_name}</p>}
